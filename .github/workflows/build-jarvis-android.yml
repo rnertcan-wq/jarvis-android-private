@@ -60,3 +60,5 @@ jobs:
           retention-days: 14
 
 # CI trigger: source archive is now committed.
+
+# Trigger direct Android SDK setup.
