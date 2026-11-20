@@ -1,0 +1,65 @@
+name: Build JARVIS AI 1.0 Android APK
+
+on:
+  push:
+    branches: [jarvis-1.0-dev]
+    paths:
+      - "source/jarvis-jadx-build.tar.xz"
+      - ".github/workflows/build-jarvis-android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platforms;android-35 build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Extract source
+        run: |
+          set -euo pipefail
+          mkdir -p work
+          tar -tJf source/jarvis-jadx-build.tar.xz > /tmp/jarvis-source-files.txt
+          head -80 /tmp/jarvis-source-files.txt
+          tar -xJf source/jarvis-jadx-build.tar.xz -C work
+          test -f work/jarvis-jadx-build/settings.gradle
+          test -f work/jarvis-jadx-build/app/src/main/AndroidManifest.xml
+
+      - name: Run tests and build APKs
+        working-directory: work/jarvis-jadx-build
+        run: |
+          gradle --no-daemon clean testDebugUnitTest assembleDebug assembleRelease
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-AI-1.0-Android-APKs
+          path: |
+            work/jarvis-jadx-build/app/build/outputs/apk/debug/*.apk
+            work/jarvis-jadx-build/app/build/outputs/apk/release/*.apk
+            work/jarvis-jadx-build/app/build/test-results/testDebugUnitTest/*.xml
+          if-no-files-found: error
+          retention-days: 14
+
+# CI trigger: source archive is now committed.
+
+# Trigger direct Android SDK setup.
