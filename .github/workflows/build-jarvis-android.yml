@@ -4,7 +4,7 @@ on:
   push:
     branches: [jarvis-1.0-dev]
     paths:
-      - "source/jarvis-1.0-source.tar.xz"
+      - "source/jarvis-jadx-build.tar.xz"
       - ".github/workflows/build-jarvis-android.yml"
   workflow_dispatch:
 
@@ -38,13 +38,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p work
-          tar -tJf source/jarvis-1.0-source.tar.xz | head -80
-          tar -xJf source/jarvis-1.0-source.tar.xz -C work
-          test -f work/jarvis-v1-project/settings.gradle
-          test -f work/jarvis-v1-project/app/src/main/AndroidManifest.xml
+          tar -tJf source/jarvis-jadx-build.tar.xz | head -80
+          tar -xJf source/jarvis-jadx-build.tar.xz -C work
+          test -f work/jarvis-jadx-build/settings.gradle
+          test -f work/jarvis-jadx-build/app/src/main/AndroidManifest.xml
 
       - name: Run tests and build APKs
-        working-directory: work/jarvis-v1-project
+        working-directory: work/jarvis-jadx-build
         run: |
           gradle --no-daemon clean testDebugUnitTest assembleDebug assembleRelease
 
@@ -53,9 +53,9 @@ jobs:
         with:
           name: JARVIS-AI-1.0-Android-APKs
           path: |
-            work/jarvis-v1-project/app/build/outputs/apk/debug/*.apk
-            work/jarvis-v1-project/app/build/outputs/apk/release/*.apk
-            work/jarvis-v1-project/app/build/test-results/testDebugUnitTest/*.xml
+            work/jarvis-jadx-build/app/build/outputs/apk/debug/*.apk
+            work/jarvis-jadx-build/app/build/outputs/apk/release/*.apk
+            work/jarvis-jadx-build/app/build/test-results/testDebugUnitTest/*.xml
           if-no-files-found: error
           retention-days: 14
 
