@@ -38,7 +38,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p work
-          tar -tJf source/jarvis-jadx-build.tar.xz | head -80
+          tar -tJf source/jarvis-jadx-build.tar.xz > /tmp/jarvis-source-files.txt
+          head -80 /tmp/jarvis-source-files.txt
           tar -xJf source/jarvis-jadx-build.tar.xz -C work
           test -f work/jarvis-jadx-build/settings.gradle
           test -f work/jarvis-jadx-build/app/src/main/AndroidManifest.xml
