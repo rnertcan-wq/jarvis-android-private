@@ -1,0 +1,36 @@
+name: Inspect JARVIS source archive
+
+on:
+  push:
+    branches: [jarvis-1.0-dev]
+    paths:
+      - ".github/workflows/inspect-jarvis-source.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect archive
+        run: |
+          set -euo pipefail
+          test -s Jarvis_GitHub_Actions_Hazirlik_Paketi.zip
+          unzip -t Jarvis_GitHub_Actions_Hazirlik_Paketi.zip
+          echo "=== ARCHIVE CONTENTS ==="
+          unzip -l Jarvis_GitHub_Actions_Hazirlik_Paketi.zip
+          mkdir -p work
+          unzip -q Jarvis_GitHub_Actions_Hazirlik_Paketi.zip -d work
+          echo "=== BUILD FILES ==="
+          find work -maxdepth 6 -type f \( -name 'build.gradle' -o -name 'settings.gradle' -o -name 'AndroidManifest.xml' -o -name '*.java' -o -name '*.kt' \) | sort | head -300
+          echo "=== TOP LEVEL ==="
+          find work -maxdepth 3 -type f | sort | head -300
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jarvis-source-archive-inspection
+          path: Jarvis_GitHub_Actions_Hazirlik_Paketi.zip
+          if-no-files-found: error
+          retention-days: 7
