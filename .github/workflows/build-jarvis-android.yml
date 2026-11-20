@@ -59,3 +59,5 @@ jobs:
             work/jarvis-v1-project/app/build/test-results/testDebugUnitTest/*.xml
           if-no-files-found: error
           retention-days: 14
+
+# CI trigger: source archive is now committed.
