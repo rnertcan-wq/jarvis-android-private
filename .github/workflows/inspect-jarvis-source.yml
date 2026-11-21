@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/inspect-jarvis-source.yml"
       - "source/jarvis-jadx-build.tar.xz"
+      - "source/jarvis-1.0-source.tar.xz"
   workflow_dispatch:
 
 permissions:
@@ -16,33 +17,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect source archive
+      - name: Inspect source archives
         run: |
           set -euo pipefail
           mkdir -p work
-          echo "=== SOURCE ARCHIVE ==="
-          ls -lh source/jarvis-jadx-build.tar.xz source/jarvis-1.0-source.tar.xz
-          tar -tJf source/jarvis-jadx-build.tar.xz | tee /tmp/source-files.txt | head -300
+          for archive in source/jarvis-jadx-build.tar.xz source/jarvis-1.0-source.tar.xz; do
+            echo "=== LIST $archive ==="
+            tar -tJf "$archive" | head -250
+          done
           tar -xJf source/jarvis-jadx-build.tar.xz -C work
-          ROOT=work/jarvis-jadx-build
-          test -f "$ROOT/settings.gradle"
-          test -f "$ROOT/app/src/main/AndroidManifest.xml"
-          echo "=== GRADLE / MANIFEST ==="
-          for f in "$ROOT/settings.gradle" "$ROOT/build.gradle" "$ROOT/app/build.gradle" "$ROOT/app/src/main/AndroidManifest.xml"; do
-            if [ -f "$f" ]; then echo "===== $f ====="; sed -n '1,260p' "$f"; fi
+          mkdir -p work/source10
+          tar -xJf source/jarvis-1.0-source.tar.xz -C work/source10
+          echo "=== TOP-LEVEL FILES ==="
+          find work -maxdepth 5 -type f | sort | head -400
+          echo "=== JADx BUILD CONFIG ==="
+          for f in work/jarvis-jadx-build/settings.gradle work/jarvis-jadx-build/build.gradle work/jarvis-jadx-build/app/build.gradle work/jarvis-jadx-build/app/src/main/AndroidManifest.xml; do
+            if [ -f "$f" ]; then echo "===== $f ====="; sed -n '1,240p' "$f"; fi
           done
-          echo "=== SOURCE FILE LIST ==="
-          find "$ROOT/app/src/main" -type f \( -name '*.kt' -o -name '*.java' \) | sort | head -400
-          echo "=== KEY SOURCE FILES ==="
-          find "$ROOT/app/src/main" -type f \( -name '*.kt' -o -name '*.java' \) | grep -Ei '(MainActivity|Voice|Live|Camera|Tts|Speech|Agent|Search|Telegram|Navigation|Map|Contact|Call|Service)' | head -30 | while read f; do
-            echo "===== $f ====="
-            sed -n '1,300p' "$f"
+          echo "=== JADx KEY JAVA SOURCES ==="
+          ROOT=work/jarvis-jadx-build/app/src/main/java/local/mertcan/jarvis
+          for name in Main.java Evren.java EvrenTalk.java VoiceDrive.java GeminiLive.java LiveRepair.java DriveDashboard.java DriveCamera.java Dashcam.java TrafficMonitor.java Actions.java Cloud.java ContactMatcher.java TelegramCommand.java; do
+            f="$ROOT/$name"
+            if [ -f "$f" ]; then
+              echo "===== $name ====="
+              sed -E '/(api.?key|secret|token|authorization|bearer)/I s/.*/<REDACTED SECRET LINE>/' "$f" | sed -n '1,420p'
+            fi
           done
-          echo "=== EVREN / GEMINI / AUDIO / CAMERA / TELEGRAM REFERENCES ==="
-          grep -RniE 'evren|gemini|speaker|onnx|AudioRecord|SpeechRecognizer|TextToSpeech|telegram|Google Maps|ACTION_WEB_SEARCH|CameraX|Camera2|PictureInPicture' "$ROOT/app/src/main" | head -500 || true
+          echo "=== OTHER SOURCE CONFIG / ASSET LIST ==="
+          find work/jarvis-jadx-build/app/src/main -maxdepth 5 -type f | grep -Ev '\.(java|class)$' | sort | head -300
+          echo "=== SECRET CONSTANT NAMES ONLY ==="
+          grep -RniE 'API.?KEY|SECRET|TOKEN|AUTHORIZATION' work/jarvis-jadx-build/app/src/main/java/local/mertcan/jarvis | sed -E 's/.*(API.?KEY|SECRET|TOKEN|AUTHORIZATION).*/\1=<redacted>/' | head -80 || true
       - uses: actions/upload-artifact@v4
         with:
           name: jarvis-source-inspection
-          path: work/jarvis-jadx-build/app/src/main
+          path: |
+            work/jarvis-jadx-build/app/src/main
+            work/source10
           if-no-files-found: error
           retention-days: 7
