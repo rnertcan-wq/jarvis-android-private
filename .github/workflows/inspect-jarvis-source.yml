@@ -21,37 +21,33 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p work
-          for archive in source/jarvis-jadx-build.tar.xz source/jarvis-1.0-source.tar.xz; do
-            echo "=== LIST $archive ==="
-            tar -tJf "$archive" | head -250
-          done
           tar -xJf source/jarvis-jadx-build.tar.xz -C work
           mkdir -p work/source10
           tar -xJf source/jarvis-1.0-source.tar.xz -C work/source10
-          echo "=== TOP-LEVEL FILES ==="
-          find work -maxdepth 5 -type f | sort | head -400
-          echo "=== JADx BUILD CONFIG ==="
-          for f in work/jarvis-jadx-build/settings.gradle work/jarvis-jadx-build/build.gradle work/jarvis-jadx-build/app/build.gradle work/jarvis-jadx-build/app/src/main/AndroidManifest.xml; do
-            if [ -f "$f" ]; then echo "===== $f ====="; sed -n '1,240p' "$f"; fi
+          ROOT=work/source10/jarvis-v1-project
+          echo "=== SOURCE10 BUILD CONFIG ==="
+          for f in "$ROOT/settings.gradle" "$ROOT/build.gradle" "$ROOT/app/build.gradle" "$ROOT/app/src/main/AndroidManifest.xml" "$ROOT/README.md"; do
+            if [ -f "$f" ]; then echo "===== $f ====="; sed -n '1,220p' "$f"; fi
           done
-          echo "=== JADx KEY JAVA SOURCES ==="
-          ROOT=work/jarvis-jadx-build/app/src/main/java/local/mertcan/jarvis
-          for name in Main.java Evren.java EvrenTalk.java VoiceDrive.java GeminiLive.java LiveRepair.java DriveDashboard.java DriveCamera.java Dashcam.java TrafficMonitor.java Actions.java Cloud.java ContactMatcher.java TelegramCommand.java; do
-            f="$ROOT/$name"
+          echo "=== SOURCE10 JAVA FILES ==="
+          find "$ROOT/app/src/main/java" -type f -name '*.java' | sort
+          echo "=== SOURCE10 KEY CLASSES ==="
+          for name in Main.java Evren.java EvrenTalk.java VoiceDrive.java GeminiLive.java LiveRepair.java DriveDashboard.java DriveCamera.java Dashcam.java TrafficMonitor.java Actions.java Cloud.java ContactMatcher.java TelegramCommand.java MapsNavigator.java Messages.java Brief.java; do
+            f="$ROOT/app/src/main/java/local/mertcan/jarvis/$name"
             if [ -f "$f" ]; then
               echo "===== $name ====="
-              sed -E '/(api.?key|secret|token|authorization|bearer)/I s/.*/<REDACTED SECRET LINE>/' "$f" | sed -n '1,420p'
+              sed -E '/(api.?key|secret|token|authorization|bearer)/I s/.*/<REDACTED SECRET LINE>/' "$f" | sed -n '1,360p'
             fi
           done
-          echo "=== OTHER SOURCE CONFIG / ASSET LIST ==="
-          find work/jarvis-jadx-build/app/src/main -maxdepth 5 -type f | grep -Ev '\.(java|class)$' | sort | head -300
+          echo "=== ASSET FILES ==="
+          find "$ROOT/app/src/main" -maxdepth 6 -type f | grep -vE '\.(java|class)$' | sort | head -300
           echo "=== SECRET CONSTANT NAMES ONLY ==="
-          grep -RniE 'API.?KEY|SECRET|TOKEN|AUTHORIZATION' work/jarvis-jadx-build/app/src/main/java/local/mertcan/jarvis | sed -E 's/.*(API.?KEY|SECRET|TOKEN|AUTHORIZATION).*/\1=<redacted>/' | head -80 || true
+          grep -RniE 'API.?KEY|SECRET|TOKEN|AUTHORIZATION' "$ROOT/app/src/main/java/local/mertcan/jarvis" | sed -E 's/.*(API.?KEY|SECRET|TOKEN|AUTHORIZATION).*/\1=<redacted>/' | head -80 || true
       - uses: actions/upload-artifact@v4
         with:
           name: jarvis-source-inspection
           path: |
+            work/source10/jarvis-v1-project/app/src/main
             work/jarvis-jadx-build/app/src/main
-            work/source10
           if-no-files-found: error
           retention-days: 7
