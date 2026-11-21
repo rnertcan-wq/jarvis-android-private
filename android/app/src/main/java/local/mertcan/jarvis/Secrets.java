@@ -3,8 +3,6 @@ package local.mertcan.jarvis;
 import android.content.Context;
 import android.security.keystore.KeyGenParameterSpec;
 import android.util.Base64;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import javax.crypto.Cipher;
@@ -46,22 +44,9 @@ final class Secrets {
 
     /* JADX WARN: Code duplicated, block: B:45:0x009c A[EXC_TOP_SPLITTER, SYNTHETIC] */
     static String loadPersonal(Context context, String str) {
-        String existing = load(context, str);
-        if (!existing.isEmpty() || Main.prefs(context).getBoolean("bootstrapUsed." + str, false)) return existing;
-        try (InputStream input = context.getAssets().open(str + ".bootstrap");
-             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-            byte[] buffer = new byte[256];
-            int count;
-            while ((count = input.read(buffer)) != -1) {
-                if (output.size() + count > 4096) return "";
-                output.write(buffer, 0, count);
-            }
-            String value = new String(output.toByteArray(), StandardCharsets.UTF_8).trim();
-            if (!value.isEmpty()) save(context, str, value);
-            return value;
-        } catch (Exception ignored) {
-            return "";
-        }
+        // API credentials must be entered by the user and stored with Android Keystore.
+        // Never import a bundled bootstrap credential from APK assets.
+        return load(context, str);
     }
 
     static String load(Context context, String str) {
