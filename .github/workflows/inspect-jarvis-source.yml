@@ -5,6 +5,7 @@ on:
     branches: [jarvis-1.0-dev]
     paths:
       - ".github/workflows/inspect-jarvis-source.yml"
+      - "source/jarvis-jadx-build.tar.xz"
   workflow_dispatch:
 
 permissions:
@@ -15,22 +16,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect archive
+      - name: Inspect source archive
         run: |
           set -euo pipefail
-          test -s Jarvis_GitHub_Actions_Hazirlik_Paketi.zip
-          unzip -t Jarvis_GitHub_Actions_Hazirlik_Paketi.zip
-          echo "=== ARCHIVE CONTENTS ==="
-          unzip -l Jarvis_GitHub_Actions_Hazirlik_Paketi.zip
           mkdir -p work
-          unzip -q Jarvis_GitHub_Actions_Hazirlik_Paketi.zip -d work
-          echo "=== BUILD FILES ==="
-          find work -maxdepth 6 -type f \( -name 'build.gradle' -o -name 'settings.gradle' -o -name 'AndroidManifest.xml' -o -name '*.java' -o -name '*.kt' \) | sort | head -300
-          echo "=== TOP LEVEL ==="
-          find work -maxdepth 3 -type f | sort | head -300
+          echo "=== SOURCE ARCHIVE ==="
+          ls -lh source/jarvis-jadx-build.tar.xz source/jarvis-1.0-source.tar.xz
+          tar -tJf source/jarvis-jadx-build.tar.xz | tee /tmp/source-files.txt | head -300
+          tar -xJf source/jarvis-jadx-build.tar.xz -C work
+          ROOT=work/jarvis-jadx-build
+          test -f "$ROOT/settings.gradle"
+          test -f "$ROOT/app/src/main/AndroidManifest.xml"
+          echo "=== GRADLE / MANIFEST ==="
+          for f in "$ROOT/settings.gradle" "$ROOT/build.gradle" "$ROOT/app/build.gradle" "$ROOT/app/src/main/AndroidManifest.xml"; do
+            if [ -f "$f" ]; then echo "===== $f ====="; sed -n '1,260p' "$f"; fi
+          done
+          echo "=== SOURCE FILE LIST ==="
+          find "$ROOT/app/src/main" -type f \( -name '*.kt' -o -name '*.java' \) | sort | head -400
+          echo "=== KEY SOURCE FILES ==="
+          find "$ROOT/app/src/main" -type f \( -name '*.kt' -o -name '*.java' \) | grep -Ei '(MainActivity|Voice|Live|Camera|Tts|Speech|Agent|Search|Telegram|Navigation|Map|Contact|Call|Service)' | head -30 | while read f; do
+            echo "===== $f ====="
+            sed -n '1,300p' "$f"
+          done
+          echo "=== EVREN / GEMINI / AUDIO / CAMERA / TELEGRAM REFERENCES ==="
+          grep -RniE 'evren|gemini|speaker|onnx|AudioRecord|SpeechRecognizer|TextToSpeech|telegram|Google Maps|ACTION_WEB_SEARCH|CameraX|Camera2|PictureInPicture' "$ROOT/app/src/main" | head -500 || true
       - uses: actions/upload-artifact@v4
         with:
-          name: jarvis-source-archive-inspection
-          path: Jarvis_GitHub_Actions_Hazirlik_Paketi.zip
+          name: jarvis-source-inspection
+          path: work/jarvis-jadx-build/app/src/main
           if-no-files-found: error
           retention-days: 7
