@@ -244,6 +244,12 @@ public final class VoiceDrive extends Service implements RecognitionListener {
 
     private void command(String str) {
         String str2;
+        String stopCommand = str.trim().toLowerCase(Main.TR).replaceAll("[.!?]+$", "");
+        if (stopCommand.equals("sessiz ol") || stopCommand.equals("live modu bitir")
+                || stopCommand.equals("canli modu bitir") || stopCommand.equals("bekleme modu")) {
+            say("Tamam. Hey Jarvis dediğinde yeniden dinleyeceğim.", false, true);
+            return;
+        }
         if (LiveRepair.wikiCommand(this, str)) {
             return;
         }
