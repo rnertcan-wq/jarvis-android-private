@@ -64,15 +64,18 @@ final class EvrenTalk {
         main.releaseMicForEvrenTalk();
         EvrenTalk evrenTalk = new EvrenTalk(main);
         active = evrenTalk;
-        AlertDialog alertDialogCreate = new AlertDialog.Builder(main).setTitle("EVREN Live").setMessage("Mikrofonla söylediğin her konuşma turu tanıma için EVREN’e gönderilir. Konuşmayı bitirince yanıt gelir.").setPositiveButton("Dinlemeyi başlat", (DialogInterface.OnClickListener) null).setNegativeButton("Kapat", new EvrenTalk$$ExternalSyntheticLambda1(evrenTalk)).create();
+        AlertDialog alertDialogCreate = new AlertDialog.Builder(main).setTitle("EVREN Live")
+                .setMessage("Eller serbest dinleme açık. Konuşman bitince yanıt vereceğim. Kapatmak için “sessiz ol” diyebilirsin.")
+                .setNegativeButton("Kapat", new EvrenTalk$ExternalSyntheticLambda1(evrenTalk)).create();
         evrenTalk.dialog = alertDialogCreate;
-        alertDialogCreate.setOnDismissListener(new EvrenTalk$$ExternalSyntheticLambda2(evrenTalk));
+        alertDialogCreate.setOnDismissListener(new EvrenTalk$ExternalSyntheticLambda2(evrenTalk));
         evrenTalk.dialog.show();
-        evrenTalk.dialog.getButton(-1).setOnClickListener(new EvrenTalk$$ExternalSyntheticLambda3(evrenTalk));
+        evrenTalk.message("Mikrofon hazırlanıyor…");
+        evrenTalk.start();
     }
 
     static /* synthetic */ void lambda$open$0(EvrenTalk evrenTalk, DialogInterface dialogInterface, int i) {
-        evrenTalk.stop();
+        evrenTalk.stopAndResumeWake();
     }
 
     static /* synthetic */ void lambda$open$1(EvrenTalk evrenTalk, DialogInterface dialogInterface) {
@@ -130,6 +133,27 @@ final class EvrenTalk {
         }
     }
 
+    private void stopAndResumeWake() {
+        stop();
+        MAIN.postDelayed(() -> {
+            if (this.dialog != null && this.dialog.isShowing()) {
+                this.dialog.dismiss();
+            }
+            if (Main.isVisible(this.activity) && !VoiceDrive.active) {
+                try {
+                    Intent intent = new Intent(this.activity, VoiceDrive.class);
+                    if (android.os.Build.VERSION.SDK_INT >= 26) {
+                        this.activity.startForegroundService(intent);
+                    } else {
+                        this.activity.startService(intent);
+                    }
+                } catch (RuntimeException e) {
+                    Toast.makeText(this.activity, "Uyandırma dinleyicisi yeniden başlatılamadı.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }, 700L);
+    }
+
     private void listen(String str) {
         while (!this.closed) {
             try {
@@ -142,8 +166,11 @@ final class EvrenTalk {
                     message("EVREN sesi yazıya çeviriyor…");
                     String strTranscribe = transcribe(bArrRecord, str);
                     if (!strTranscribe.isEmpty() && !this.closed) {
+                        boolean stopAfterReply = GeminiLive.sleepPhrase(strTranscribe);
                         message("Sen: " + strTranscribe + "\n\nEVREN yanıtlıyor…");
-                        String strLocalOnMain = localOnMain(strTranscribe);
+                        String strLocalOnMain = stopAfterReply
+                                ? "Tamam. Hey Jarvis dediğinde yeniden dinleyeceğim."
+                                : localOnMain(strTranscribe);
                         if (this.closed) {
                             return;
                         }
@@ -171,6 +198,10 @@ final class EvrenTalk {
                             message("EVREN: " + strLocalOnMain + "\n\nSeslendirme alınamadı.");
                             Thread.sleep(2000L);
                         }
+                        if (stopAfterReply) {
+                            stopAndResumeWake();
+                            return;
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -190,10 +221,10 @@ final class EvrenTalk {
 
     /* JADX INFO: renamed from: lambda$listen$4$local-mertcan-jarvis-EvrenTalk, reason: not valid java name */
     /* synthetic */ void m23lambda$listen$4$localmertcanjarvisEvrenTalk() {
-        if (this.closed || !this.dialog.isShowing()) {
+        if (this.closed || this.dialog == null || !this.dialog.isShowing()) {
             return;
         }
-        this.dialog.getButton(-1).setEnabled(true);
+        this.dialog.setMessage("Canlı oturum durdu. Kapatıp yeniden açabilirsin.");
     }
 
     private String localOnMain(String str) throws Exception {
