@@ -74,22 +74,6 @@ final class EvrenTalk {
         evrenTalk.start();
     }
 
-    static /* synthetic */ void lambda$open$0(EvrenTalk evrenTalk, DialogInterface dialogInterface, int i) {
-        evrenTalk.stopAndResumeWake();
-    }
-
-    static /* synthetic */ void lambda$open$1(EvrenTalk evrenTalk, DialogInterface dialogInterface) {
-        evrenTalk.stop();
-    }
-
-    static /* synthetic */ void lambda$open$2(EvrenTalk evrenTalk, View view) {
-        view.setEnabled(false);
-        evrenTalk.message("Mikrofon hazırlanıyor…");
-        Handler handler = MAIN;
-        Objects.requireNonNull(evrenTalk);
-        handler.postDelayed(new EvrenTalk$$ExternalSyntheticLambda8(evrenTalk), 500L);
-    }
-
     static void permission(Main main, int i) {
         if (i != 195) {
             return;
