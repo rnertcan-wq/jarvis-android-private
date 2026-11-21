@@ -200,6 +200,15 @@ public final class Main extends Activity implements RecognitionListener {
         return true;
     }
 
+    static boolean startGeminiLiveFromVoice() {
+        Main main = visible;
+        if (!isVisible(main)) return false;
+        main.runOnUiThread(() -> {
+            if (isVisible(main)) main.startLive();
+        });
+        return true;
+    }
+
     static /* synthetic */ TextView access$000(Main main) {
         return main.status;
     }
