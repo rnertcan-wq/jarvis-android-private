@@ -1,4 +1,4 @@
-name: Materialize and build JARVIS 1.0 source
+name: Materialize and build JARVIS 2.0 base
 
 on:
   push:
@@ -36,20 +36,20 @@ jobs:
         with:
           gradle-version: "8.11.1"
 
-      - name: Materialize original source
+      - name: Materialize the buildable JARVIS base
         shell: bash
         run: |
           set -euo pipefail
-          test -s source/jarvis-1.0-source.tar.xz
+          test -s source/jarvis-jadx-build.tar.xz
           mkdir -p /tmp/jarvis-source
-          tar -xJf source/jarvis-1.0-source.tar.xz -C /tmp/jarvis-source
-          test -f /tmp/jarvis-source/jarvis-v1-project/settings.gradle
-          test -f /tmp/jarvis-source/jarvis-v1-project/app/src/main/AndroidManifest.xml
+          tar -xJf source/jarvis-jadx-build.tar.xz -C /tmp/jarvis-source
+          test -f /tmp/jarvis-source/jarvis-jadx-build/settings.gradle
+          test -f /tmp/jarvis-source/jarvis-jadx-build/app/src/main/AndroidManifest.xml
           if [ -e android ]; then
             echo "android/ already exists; refusing to overwrite source."
             exit 1
           fi
-          mv /tmp/jarvis-source/jarvis-v1-project android
+          mv /tmp/jarvis-source/jarvis-jadx-build android
           cat > android/.gitignore <<'EOF'
           .gradle/
           **/build/
@@ -57,10 +57,34 @@ jobs:
           *.jks
           *.keystore
           EOF
+          sed -i 's/versionCode 100/versionCode 200/; s/versionName "1.0.0"/versionName "2.0.0"/' android/app/build.gradle
+          sed -i 's/android:label="JARVIS AI"/android:label="JARVIS AI 2.0"/' android/app/src/main/AndroidManifest.xml
+          cat > android/README.md <<'EOF'
+          # JARVIS AI 2.0 development base
+
+          This is the buildable Android project recovered from the available JARVIS APK source archive.
+          It is a clean development baseline, not a claim that all planned 2.0 features are complete.
+
+          ## Build
+          Requirements: JDK 17, Android SDK Platform 35, Build Tools 35.0.0, Gradle 8.11.1.
+
+          ```bash
+          gradle --no-daemon clean testDebugUnitTest assembleDebug
+          ```
+
+          ## Configuration
+          - EVREN and Gemini credentials are configured locally in app settings; never commit API keys.
+          - The test application ID remains `local.mertcan.jarvis.next` so it can be installed beside an existing JARVIS build.
+          - Camera, microphone, contacts, calling and location require Android runtime permissions.
+          - Google Maps turn-by-turn navigation is delegated to the installed Google Maps app. The dashboard map tiles are not a Google Maps SDK embed.
+          - Driver-monitoring and road-warning features must be verified on the target phone before being treated as safety features.
+          EOF
           echo "=== SOURCE INVENTORY ==="
           find android/app/src/main/java -type f \( -name '*.java' -o -name '*.kt' \) | sort
           echo "=== APP CONFIG ==="
           sed -n '1,240p' android/app/build.gradle
+          echo "=== MANIFEST ==="
+          sed -n '1,260p' android/app/src/main/AndroidManifest.xml
 
       - name: Run unit tests and build debug APK
         working-directory: android
@@ -80,14 +104,14 @@ jobs:
           if git diff --cached --quiet; then
             echo "No source changes to commit."
           else
-            git commit -m "build: materialize JARVIS Android 1.0 source project"
+            git commit -m "build: materialize JARVIS Android 2.0 development base"
             git push origin HEAD:jarvis-1.0-dev
           fi
 
       - name: Upload APK and test results
         uses: actions/upload-artifact@v4
         with:
-          name: JARVIS-1.0-baseline-debug
+          name: JARVIS-2.0-development-baseline
           path: |
             android/app/build/outputs/apk/debug/*.apk
             android/app/build/test-results/testDebugUnitTest/*.xml
