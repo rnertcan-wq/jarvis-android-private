@@ -40,5 +40,6 @@ android {
 
 dependencies {
     implementation 'com.squareup.okhttp3:okhttp:3.14.9'
+    implementation 'com.google.mlkit:face-detection:16.1.7'
     testImplementation 'junit:junit:4.13.2'
 }
