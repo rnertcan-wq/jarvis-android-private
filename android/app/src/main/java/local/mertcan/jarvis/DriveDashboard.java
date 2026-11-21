@@ -53,6 +53,11 @@ final class DriveDashboard implements TextureView.SurfaceTextureListener {
     private final Main activity;
     private static boolean awaiting;
     private final LinearLayout cameraCard;
+    private LinearLayout controls;
+    private float normalCameraWeight;
+    private boolean pipMode;
+    private boolean statusWasVisible;
+    private boolean trafficWasVisible;
     private boolean closed;
     private static DriveDashboard current;
     private final Dialog dialog;
@@ -150,10 +155,44 @@ final class DriveDashboard implements TextureView.SurfaceTextureListener {
 
     static void suspend(Main main) {
         DriveDashboard driveDashboard = current;
-        if (driveDashboard == null || driveDashboard.activity != main) {
+        if (driveDashboard == null || driveDashboard.activity != main || main.isInPictureInPictureMode()) {
             return;
         }
         driveDashboard.dialog.dismiss();
+    }
+
+    static void pipMode(Main main, boolean enabled) {
+        DriveDashboard driveDashboard = current;
+        if (driveDashboard != null && driveDashboard.activity == main) {
+            driveDashboard.setPipMode(enabled);
+        }
+    }
+
+    private void setPipMode(boolean enabled) {
+        if (this.closed || this.pipMode == enabled) return;
+        this.pipMode = enabled;
+        if (enabled) {
+            this.statusWasVisible = this.status.getVisibility() == View.VISIBLE;
+            this.trafficWasVisible = this.traffic.getVisibility() == View.VISIBLE;
+            this.mapCard.setVisibility(View.GONE);
+            if (this.controls != null) this.controls.setVisibility(View.GONE);
+            this.status.setVisibility(View.GONE);
+            this.traffic.setVisibility(View.GONE);
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) this.cameraCard.getLayoutParams();
+            params.weight = 1.0f;
+            this.cameraCard.setLayoutParams(params);
+            this.driverStatus.setText("JARVIS kamera canlı");
+        } else {
+            this.mapCard.setVisibility(View.VISIBLE);
+            if (this.controls != null) this.controls.setVisibility(View.VISIBLE);
+            this.status.setVisibility(this.statusWasVisible ? View.VISIBLE : View.GONE);
+            this.traffic.setVisibility(this.trafficWasVisible ? View.VISIBLE : View.GONE);
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) this.cameraCard.getLayoutParams();
+            params.weight = this.normalCameraWeight;
+            this.cameraCard.setLayoutParams(params);
+            this.mapCard.requestLayout();
+            updateMap();
+        }
     }
 
     static void onPermission(Main main, int i) {
@@ -259,6 +298,7 @@ final class DriveDashboard implements TextureView.SurfaceTextureListener {
         } else {
             layoutParams4.bottomMargin = dp(10);
         }
+        this.normalCameraWeight = layoutParams4.weight;
         linearLayout3.addView(linearLayoutPanel, layoutParams4);
         LinearLayout linearLayoutPanel2 = panel("Harita");
         this.mapCard = linearLayoutPanel2;
@@ -290,6 +330,7 @@ final class DriveDashboard implements TextureView.SurfaceTextureListener {
         Button buttonControl5 = control("Kaydı bitir", -12311761, -15155);
         buttonControl5.setOnClickListener(new DriveDashboard$$ExternalSyntheticLambda14(this));
         addControl(linearLayout5, buttonControl5, true);
+        this.controls = linearLayout5;
         linearLayout.addView(linearLayout5);
         dialog.setContentView(linearLayout);
         dialog.setOnDismissListener(new DriveDashboard$$ExternalSyntheticLambda15(this));
@@ -644,9 +685,15 @@ final class DriveDashboard implements TextureView.SurfaceTextureListener {
 
     static String cameraOffAndOpenMaps(android.content.Context context) {
         DriveDashboard dashboard = current;
+        boolean pip = false;
         if (dashboard != null) {
-            if (dashboard.dialog.isShowing()) dashboard.dialog.dismiss();
-            else dashboard.close();
+            dashboard.setPipMode(true);
+            pip = Main.enterDrivingPip();
+            if (!pip) {
+                dashboard.setPipMode(false);
+                if (dashboard.dialog.isShowing()) dashboard.dialog.dismiss();
+                else dashboard.close();
+            }
         }
         Uri.Builder builder = Uri.parse("https://www.google.com/maps/@").buildUpon()
                 .appendQueryParameter("api", "1").appendQueryParameter("map_action", "map");
@@ -658,11 +705,15 @@ final class DriveDashboard implements TextureView.SurfaceTextureListener {
         try {
             context.startActivity(new Intent("android.intent.action.VIEW", mapUri)
                     .setPackage("com.google.android.apps.maps").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            return "JARVIS kamera önizlemesi kapatıldı. Google Maps açılıyor.";
+            return pip
+                    ? "Google Maps açılıyor. JARVIS kamera penceresi küçük PiP görünümünde kalacak."
+                    : "Google Maps açılıyor.";
         } catch (ActivityNotFoundException missingMaps) {
             try {
                 context.startActivity(new Intent("android.intent.action.VIEW", mapUri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                return "Google Maps uygulaması bulunamadı; haritayı tarayıcıda açıyorum.";
+                return pip
+                        ? "Google Maps uygulaması bulunamadı; haritayı tarayıcıda açıyorum. JARVIS kamera penceresi açık kalacak."
+                        : "Google Maps uygulaması bulunamadı; haritayı tarayıcıda açıyorum.";
             } catch (RuntimeException failure) {
                 return "Google Maps açılamadı. Harita uygulamasını kontrol et.";
             }
