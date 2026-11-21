@@ -43,6 +43,7 @@ public final class VoiceDrive extends Service implements RecognitionListener {
     private TextToSpeech tts;
     private int turn;
     private boolean voiceReady;
+    private boolean useDefaultRecognizer;
     private static final Pattern WAKE = Pattern.compile("(?iu)^(?:hey[\\s,]+)?(?:jarvis|carvis)\\b[\\s,.:!?-]*");
     private final Handler timer = new Handler(Looper.getMainLooper());
     private String utterance = "";
@@ -98,9 +99,12 @@ public final class VoiceDrive extends Service implements RecognitionListener {
             }
             LiveRepair.attach(this);
             if (!LiveRepair.available(this)) {
-                failure("Telefonda cihaz içi ses tanıma yok. Bas-konuşu kullan.");
+                failure("Telefonda kullanılabilir Türkçe ses tanıma hizmeti bulunamadı.");
                 return 2;
             }
+            this.useDefaultRecognizer = LiveRepair.requested()
+                    || Build.VERSION.SDK_INT < 31
+                    || !SpeechRecognizer.isOnDeviceRecognitionAvailable(this);
             active = true;
             this.audio = (AudioManager) getSystemService(AudioManager.class);
             AudioAttributes audioAttributesBuild = new AudioAttributes.Builder().setUsage(1).setContentType(1).build();
@@ -193,7 +197,7 @@ public final class VoiceDrive extends Service implements RecognitionListener {
             return;
         }
         try {
-            this.recognizer.startListening(new Intent("android.speech.action.RECOGNIZE_SPEECH").putExtra("android.speech.extra.LANGUAGE_MODEL", "free_form").putExtra("android.speech.extra.LANGUAGE", "tr-TR").putExtra("android.speech.extra.PREFER_OFFLINE", !LiveRepair.requested()).putExtra("android.speech.extra.MAX_RESULTS", 3));
+            this.recognizer.startListening(new Intent("android.speech.action.RECOGNIZE_SPEECH").putExtra("android.speech.extra.LANGUAGE_MODEL", "free_form").putExtra("android.speech.extra.LANGUAGE", "tr-TR").putExtra("android.speech.extra.PREFER_OFFLINE", !LiveRepair.requested() && !this.useDefaultRecognizer).putExtra("android.speech.extra.MAX_RESULTS", 3));
         } catch (RuntimeException e) {
             failure("Mikrofon açılamadı. Kaydı kapatıp yeniden dene.");
         }
@@ -221,6 +225,9 @@ public final class VoiceDrive extends Service implements RecognitionListener {
                 this.awake = true;
                 this.turn++;
                 this.audio.requestAudioFocus(this.focus);
+                if (this.audio.isMusicActive()) {
+                    media(127);
+                }
                 notice("Seni dinliyorum");
                 String strTrim2 = str.trim().substring(matcher.end()).trim();
                 if (strTrim2.isEmpty()) {
@@ -473,8 +480,29 @@ public final class VoiceDrive extends Service implements RecognitionListener {
         if (LiveRepair.busy(this) || this.stopped || this.speaking) {
             return;
         }
-        if (i == 12 || i == 13 || i == 9) {
-            failure("Türkçe çevrimdışı ses modeli veya mikrofon izni gerekli.");
+        if (i == 9) {
+            failure("Mikrofon izni gerekli. Android uygulama izinlerinden mikrofon erişimini aç.");
+            return;
+        }
+        if (i == 12 || i == 13) {
+            if (!this.useDefaultRecognizer && SpeechRecognizer.isRecognitionAvailable(this)) {
+                try {
+                    this.useDefaultRecognizer = true;
+                    if (this.recognizer != null) {
+                        try { this.recognizer.cancel(); } catch (RuntimeException ignored) { }
+                        this.recognizer.destroy();
+                    }
+                    this.recognizer = SpeechRecognizer.createSpeechRecognizer(this);
+                    this.recognizer.setRecognitionListener(this);
+                    this.errors = 0;
+                    notice("Çevrimdışı Türkçe model yok · çevrimiçi ses tanıma kullanılıyor");
+                    queue(700L);
+                    return;
+                } catch (RuntimeException ignored) {
+                    // Fall through to a clear service error below.
+                }
+            }
+            failure("Türkçe ses tanıma hizmeti kullanılamıyor. Google konuşma hizmetini ve mikrofon iznini kontrol et.");
             return;
         }
         if (this.awake) {
