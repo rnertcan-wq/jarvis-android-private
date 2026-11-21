@@ -1,15 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    android:versionCode="19"
-    android:versionName="0.9.9"
-    android:compileSdkVersion="35"
-    android:compileSdkVersionCodename="15"
-    package="local.mertcan.jarvis"
-    platformBuildVersionCode="35"
-    platformBuildVersionName="15">
-    <uses-sdk
-        android:minSdkVersion="26"
-        android:targetSdkVersion="35"/>
+>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
@@ -53,7 +44,10 @@
         <activity
             android:name="local.mertcan.jarvis.Main"
             android:exported="true"
-            android:launchMode="singleTop">
+            android:launchMode="singleTop"
+            android:supportsPictureInPicture="true"
+            android:resizeableActivity="true"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
