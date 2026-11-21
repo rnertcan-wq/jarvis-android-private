@@ -1,10 +1,10 @@
-name: Build JARVIS AI 1.0 Android APK
+name: Build JARVIS AI 2.0 Android APK
 
 on:
   push:
     branches: [jarvis-1.0-dev]
     paths:
-      - "source/jarvis-jadx-build.tar.xz"
+      - "android/**"
       - ".github/workflows/build-jarvis-android.yml"
   workflow_dispatch:
 
@@ -17,9 +17,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: jarvis-1.0-dev
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -34,32 +36,23 @@ jobs:
         with:
           gradle-version: "8.11.1"
 
-      - name: Extract source
+      - name: Verify project and build APKs
+        working-directory: android
         run: |
           set -euo pipefail
-          mkdir -p work
-          tar -tJf source/jarvis-jadx-build.tar.xz > /tmp/jarvis-source-files.txt
-          head -80 /tmp/jarvis-source-files.txt
-          tar -xJf source/jarvis-jadx-build.tar.xz -C work
-          test -f work/jarvis-jadx-build/settings.gradle
-          test -f work/jarvis-jadx-build/app/src/main/AndroidManifest.xml
-
-      - name: Run tests and build APKs
-        working-directory: work/jarvis-jadx-build
-        run: |
+          test -f settings.gradle
+          test -f app/src/main/AndroidManifest.xml
           gradle --no-daemon clean testDebugUnitTest assembleDebug assembleRelease
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          sha256sum app/build/outputs/apk/debug/*.apk app/build/outputs/apk/release/*.apk
 
-      - name: Upload APKs
+      - name: Upload APKs and test reports
         uses: actions/upload-artifact@v4
         with:
-          name: JARVIS-AI-1.0-Android-APKs
+          name: JARVIS-AI-2.0-Android-APKs
           path: |
-            work/jarvis-jadx-build/app/build/outputs/apk/debug/*.apk
-            work/jarvis-jadx-build/app/build/outputs/apk/release/*.apk
-            work/jarvis-jadx-build/app/build/test-results/testDebugUnitTest/*.xml
+            android/app/build/outputs/apk/debug/*.apk
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/test-results/testDebugUnitTest/*.xml
           if-no-files-found: error
           retention-days: 14
-
-# CI trigger: source archive is now committed.
-
-# Trigger direct Android SDK setup.
