@@ -108,14 +108,17 @@ final class LiveRepair {
     }
 
     static boolean available(Context context) {
-        if (requested) {
-            return SpeechRecognizer.isRecognitionAvailable(context);
-        }
-        return Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(context);
+        // Prefer on-device Turkish recognition, but do not disable hands-free mode
+        // on devices whose OEM speech service only exposes the network recognizer.
+        return SpeechRecognizer.isRecognitionAvailable(context);
     }
 
     static SpeechRecognizer recognizer(Context context) {
-        return requested ? SpeechRecognizer.createSpeechRecognizer(context) : SpeechRecognizer.createOnDeviceSpeechRecognizer(context);
+        if (requested) return SpeechRecognizer.createSpeechRecognizer(context);
+        if (Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
+            return SpeechRecognizer.createOnDeviceSpeechRecognizer(context);
+        }
+        return SpeechRecognizer.createSpeechRecognizer(context);
     }
 
     static String local(Context context, String str) {
