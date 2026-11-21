@@ -18,11 +18,13 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
-import android.media.FaceDetector;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.view.Surface;
 import android.view.TextureView;
@@ -38,6 +40,11 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.util.ArrayList;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.face.Face;
+import com.google.mlkit.vision.face.FaceDetection;
+import com.google.mlkit.vision.face.FaceDetector;
+import com.google.mlkit.vision.face.FaceDetectorOptions;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -86,6 +93,16 @@ final class DriveDashboard implements TextureView.SurfaceTextureListener {
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private final Runnable faceCheck = new DriveDashboard$$ExternalSyntheticLambda9(this);
     private final ExecutorService vision = Executors.newSingleThreadExecutor();
+    private final FaceDetector eyeDetector = FaceDetection.getClient(
+            new FaceDetectorOptions.Builder()
+                    .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+                    .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
+                    .setMinFaceSize(0.15f)
+                    .enableTracking()
+                    .build());
+    private ToneGenerator driverAlarm;
+    private long eyesClosedSince;
+    private boolean drowsinessAlerted;
     private static String liveState = "Eller serbest kapalı";
 
     public static /* synthetic */ void $r8$lambda$5adlwB6O0i_GZ4Fc52tVwFF6UAI(DriveDashboard driveDashboard) {
@@ -530,7 +547,7 @@ final class DriveDashboard implements TextureView.SurfaceTextureListener {
         if (z) {
             str = "Bir sonraki sürüş kaydında ön kamerayı kapat.";
         } else {
-            str = "Ön kamera görüntüsü yalnızca sürücü yüzünü cihaz üzerinde kontrol etmek için kullanılır; ön video kaydedilmez veya yüklenmez. Yeniden açtığında devreye girer.";
+            str = "Ön kamera görüntüsü cihaz üzerinde yüz ve göz açıklığı kontrolü için kullanılır; ön video kaydedilmez veya yüklenmez. Bu uyarı destek amaçlıdır, sürüş güvenliğinin yerini tutmaz. Yeniden açtığında devreye girer.";
         }
         title.setMessage(str).setPositiveButton(z ? "Sonraki kayıtta kapat" : "Sonraki kayıtta aç", new DriveDashboard$$ExternalSyntheticLambda19(this, z)).setNegativeButton("Vazgeç", (DialogInterface.OnClickListener) null).show();
     }
@@ -542,15 +559,69 @@ final class DriveDashboard implements TextureView.SurfaceTextureListener {
     }
 
     private void checkFace() {
-        TextureView textureView;
-        if (this.closed || (textureView = this.frontTexture) == null) {
+        TextureView front = this.frontTexture;
+        if (this.closed || front == null) return;
+        Bitmap bitmap = front.isAvailable() ? front.getBitmap(320, 240) : null;
+        if (bitmap == null) {
+            MAIN.postDelayed(this.faceCheck, 1200L);
             return;
         }
-        Bitmap bitmap = textureView.isAvailable() ? this.frontTexture.getBitmap(160, 120) : null;
-        if (bitmap != null) {
-            this.vision.execute(new DriveDashboard$$ExternalSyntheticLambda0(this, bitmap));
+        try {
+            this.eyeDetector.process(InputImage.fromBitmap(bitmap, 0))
+                    .addOnSuccessListener(faces -> {
+                        if (this.closed) return;
+                        if (faces.isEmpty()) {
+                            this.driverStatus.setText("Sürücü yüzü görünmüyor");
+                            this.eyesClosedSince = 0L;
+                            this.drowsinessAlerted = false;
+                            return;
+                        }
+                        Face face = faces.get(0);
+                        Float left = face.getLeftEyeOpenProbability();
+                        Float right = face.getRightEyeOpenProbability();
+                        if (left == null || right == null) {
+                            this.driverStatus.setText("Yüz algılandı · göz analizi bekleniyor");
+                            return;
+                        }
+                        if (left < 0.22f && right < 0.22f) {
+                            if (this.eyesClosedSince == 0L) {
+                                this.eyesClosedSince = SystemClock.elapsedRealtime();
+                            }
+                            long closedFor = SystemClock.elapsedRealtime() - this.eyesClosedSince;
+                            if (closedFor >= 1800L && !this.drowsinessAlerted) {
+                                this.drowsinessAlerted = true;
+                                this.driverStatus.setText("DİKKAT · gözler uzun süre kapalı");
+                                alertDrowsiness();
+                            } else {
+                                this.driverStatus.setText("Göz kapanması izleniyor");
+                            }
+                        } else {
+                            this.eyesClosedSince = 0L;
+                            this.drowsinessAlerted = false;
+                            this.driverStatus.setText("Gözler açık · sürücü izleniyor");
+                        }
+                    })
+                    .addOnFailureListener(error -> {
+                        if (!this.closed) this.driverStatus.setText("Sürücü takibi geçici olarak kullanılamıyor");
+                    })
+                    .addOnCompleteListener(task -> {
+                        bitmap.recycle();
+                        if (!this.closed) MAIN.postDelayed(this.faceCheck, 800L);
+                    });
+        } catch (RuntimeException error) {
+            bitmap.recycle();
+            MAIN.postDelayed(this.faceCheck, 1500L);
         }
-        MAIN.postDelayed(this.faceCheck, 2500L);
+    }
+
+    private void alertDrowsiness() {
+        try {
+            if (this.driverAlarm == null) {
+                this.driverAlarm = new ToneGenerator(AudioManager.STREAM_ALARM, 90);
+            }
+            this.driverAlarm.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 1200);
+        } catch (RuntimeException ignored) {
+        }
     }
 
     /* JADX WARN: Code duplicated, block: B:14:0x002a A[PHI: r0 r1
@@ -842,6 +913,11 @@ final class DriveDashboard implements TextureView.SurfaceTextureListener {
         Handler handler = MAIN;
         handler.removeCallbacks(this.faceCheck);
         this.vision.shutdownNow();
+        this.eyeDetector.close();
+        if (this.driverAlarm != null) {
+            this.driverAlarm.release();
+            this.driverAlarm = null;
+        }
         if (current == this) {
             current = null;
         }
