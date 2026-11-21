@@ -5,8 +5,6 @@ on:
     branches: [jarvis-1.0-dev]
     paths:
       - ".github/workflows/inspect-jarvis-source.yml"
-      - "source/jarvis-jadx-build.tar.xz"
-      - "source/jarvis-1.0-source.tar.xz"
   workflow_dispatch:
 
 permissions:
@@ -17,37 +15,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect source archives
+      - name: Inspect archive
         run: |
           set -euo pipefail
+          test -s Jarvis_GitHub_Actions_Hazirlik_Paketi.zip
+          unzip -t Jarvis_GitHub_Actions_Hazirlik_Paketi.zip
+          echo "=== ARCHIVE CONTENTS ==="
+          unzip -l Jarvis_GitHub_Actions_Hazirlik_Paketi.zip
           mkdir -p work
-          tar -xJf source/jarvis-jadx-build.tar.xz -C work
-          mkdir -p work/source10
-          tar -xJf source/jarvis-1.0-source.tar.xz -C work/source10
-          ROOT=work/source10/jarvis-v1-project
-          echo "=== SOURCE10 BUILD CONFIG ==="
-          for f in "$ROOT/settings.gradle" "$ROOT/build.gradle" "$ROOT/app/build.gradle" "$ROOT/app/src/main/AndroidManifest.xml" "$ROOT/README.md"; do
-            if [ -f "$f" ]; then echo "===== $f ====="; sed -n '1,220p' "$f"; fi
-          done
-          echo "=== SOURCE10 JAVA FILES ==="
-          find "$ROOT/app/src/main/java" -type f -name '*.java' | sort
-          echo "=== SOURCE10 KEY CLASSES ==="
-          for name in Main.java Evren.java EvrenTalk.java VoiceDrive.java GeminiLive.java LiveRepair.java DriveDashboard.java DriveCamera.java Dashcam.java TrafficMonitor.java Actions.java Cloud.java ContactMatcher.java TelegramCommand.java MapsNavigator.java Messages.java Brief.java; do
-            f="$ROOT/app/src/main/java/local/mertcan/jarvis/$name"
-            if [ -f "$f" ]; then
-              echo "===== $name ====="
-              sed -E '/(api.?key|secret|token|authorization|bearer)/I s/.*/<REDACTED SECRET LINE>/' "$f" | sed -n '1,360p'
-            fi
-          done
-          echo "=== ASSET FILES ==="
-          find "$ROOT/app/src/main" -maxdepth 6 -type f | grep -vE '\.(java|class)$' | sort | head -300
-          echo "=== SECRET CONSTANT NAMES ONLY ==="
-          grep -RniE 'API.?KEY|SECRET|TOKEN|AUTHORIZATION' "$ROOT/app/src/main/java/local/mertcan/jarvis" | sed -E 's/.*(API.?KEY|SECRET|TOKEN|AUTHORIZATION).*/\1=<redacted>/' | head -80 || true
+          unzip -q Jarvis_GitHub_Actions_Hazirlik_Paketi.zip -d work
+          echo "=== BUILD FILES ==="
+          find work -maxdepth 6 -type f \( -name 'build.gradle' -o -name 'settings.gradle' -o -name 'AndroidManifest.xml' -o -name '*.java' -o -name '*.kt' \) | sort | head -300
+          echo "=== TOP LEVEL ==="
+          find work -maxdepth 3 -type f | sort | head -300
       - uses: actions/upload-artifact@v4
         with:
-          name: jarvis-source-inspection
-          path: |
-            work/source10/jarvis-v1-project/app/src/main
-            work/jarvis-jadx-build/app/src/main
+          name: jarvis-source-archive-inspection
+          path: Jarvis_GitHub_Actions_Hazirlik_Paketi.zip
           if-no-files-found: error
           retention-days: 7
