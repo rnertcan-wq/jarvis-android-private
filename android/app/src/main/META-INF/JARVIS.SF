@@ -1,0 +1,23 @@
+Signature-Version: 1.0
+Created-By: 1.0 (Android)
+SHA-256-Digest-Manifest: Dzc07qjyriqDgyxJKXB+jPTm4Xqw130yjDMv27xApj0=
+X-Android-APK-Signed: 2, 3
+
+Name: AndroidManifest.xml
+SHA-256-Digest: otgG9t12RpSV5rueAbqZrTX+5rPD/KD9m0Yg4yBgNaQ=
+
+Name: assets/evren.bootstrap
+SHA-256-Digest: Ql22iqO2QfCx57X+63R+HFimIi5EveVPMntDbOepVnU=
+
+Name: assets/turkey-speed-cameras.csv
+SHA-256-Digest: L8z18r0s39Uy/HS9qNDV/wYzB8TpTtw2wVkj3uQlcO0=
+
+Name: classes.dex
+SHA-256-Digest: uM7kHITVpycRGo/2mYtFfN86xrHzJdAooNY7EIY8xfg=
+
+Name: classes2.dex
+SHA-256-Digest: lnpQKUQTgmSisZ3sgxRGfzP3BV262rl2xqI0BtIdrzk=
+
+Name: resources.arsc
+SHA-256-Digest: WI7ra9otg9dpCR3VQ1+hGvOUf/iB0oxzAf1HWkM8CU4=
+
