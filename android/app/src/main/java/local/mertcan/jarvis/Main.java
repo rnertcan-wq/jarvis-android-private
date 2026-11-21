@@ -187,6 +187,19 @@ public final class Main extends Activity implements RecognitionListener {
         }
     }
 
+    static boolean isVisible(Main main) {
+        return main != null && visible == main && !main.isFinishing() && !main.isDestroyed();
+    }
+
+    static boolean openEvrenLiveFromVoice() {
+        Main main = visible;
+        if (!isVisible(main)) return false;
+        main.runOnUiThread(() -> {
+            if (isVisible(main)) EvrenTalk.open(main);
+        });
+        return true;
+    }
+
     static /* synthetic */ TextView access$000(Main main) {
         return main.status;
     }
