@@ -593,7 +593,7 @@ public final class Main extends Activity implements RecognitionListener {
         Button button = new Button(this);
         button.setText(str);
         button.setAllCaps(false);
-        button.setOnClickListener(new Main$ExternalSyntheticLambda59(runnable));
+        button.setOnClickListener(view -> runnable.run());
         button.setTextSize(13.0f);
         button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         button.setTextColor(0xFFE6F2FC);
