@@ -249,7 +249,19 @@ public final class VoiceDrive extends Service implements RecognitionListener {
                 || stopCommand.equals("evren canli modu ac") || stopCommand.equals("evren canlı modu aç")
                 || stopCommand.equals("evren live baslat") || stopCommand.equals("evren live başlat")) {
             if (Main.openEvrenLiveFromVoice()) return;
-            say("EVREN Live'i sesle açmak için JARVIS ekranını açık tut.", false, true);
+            say("EVREN Live'i açmak için JARVIS ekranını açık tut ve EVREN anahtarını ayarla.", false, true);
+            return;
+        }
+        if (stopCommand.equals("gemini live ac") || stopCommand.equals("gemini live aç")
+                || stopCommand.equals("gemini canli modu ac") || stopCommand.equals("gemini canlı modu aç")
+                || stopCommand.equals("live modu ac") || stopCommand.equals("live modu aç")
+                || stopCommand.equals("canli modu ac") || stopCommand.equals("canlı modu aç")) {
+            if (Cloud.key.isEmpty()) {
+                say("Gemini Live için önce Gemini API anahtarını ayarlara ekle.", false, true);
+                return;
+            }
+            if (Main.startGeminiLiveFromVoice()) return;
+            say("Gemini Live'i sesle açmak için JARVIS ekranını açık tut.", false, true);
             return;
         }
         if (stopCommand.equals("sessiz ol") || stopCommand.equals("live modu bitir")
