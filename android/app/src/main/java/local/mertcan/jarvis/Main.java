@@ -16,6 +16,7 @@ import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.database.Cursor;
 import android.graphics.Insets;
+import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.hardware.camera2.CameraManager;
@@ -35,6 +36,7 @@ import android.speech.RecognitionListener;
 import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.OrientationEventListener;
 import android.view.View;
@@ -305,28 +307,80 @@ public final class Main extends Activity implements RecognitionListener {
         scrollView.setFillViewport(true);
         this.ui = new LinearLayout(this);
         this.ui.setOrientation(1);
-        this.ui.setBackgroundColor(-16051940);
+        this.ui.setBackgroundColor(0xFF081522);
         int iDp = dp(this.wide ? 12 : 16);
         this.ui.setPadding(iDp, iDp, iDp, iDp);
         scrollView.addView(this.ui);
         setContentView(scrollView);
-        TextView textView = new TextView(this);
-        textView.setText("Jarvis");
-        textView.setTextColor(-6166017);
-        textView.setTextSize(30.0f);
-        this.ui.addView(textView);
+        LinearLayout hero = new LinearLayout(this);
+        hero.setOrientation(1);
+        hero.setGravity(Gravity.CENTER_HORIZONTAL);
+        hero.setPadding(dp(16), dp(16), dp(16), dp(16));
+        GradientDrawable heroBackground = new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                new int[]{0xFF17344D, 0xFF0D1E30});
+        heroBackground.setCornerRadius(dp(26));
+        heroBackground.setStroke(dp(1), 0xFF294A65);
+        hero.setBackground(heroBackground);
+        hero.setElevation(dp(4));
+
+        JarvisOrbView orb = new JarvisOrbView(this);
+        LinearLayout.LayoutParams orbParams = new LinearLayout.LayoutParams(dp(116), dp(116));
+        orbParams.gravity = Gravity.CENTER;
+        hero.addView(orb, orbParams);
+
+        TextView brand = new TextView(this);
+        brand.setText("JARVIS AI 2.0");
+        brand.setTextColor(0xFFF0F8FF);
+        brand.setTextSize(21.0f);
+        brand.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        brand.setGravity(Gravity.CENTER);
+        brand.setPadding(0, dp(4), 0, 0);
+        hero.addView(brand);
+
+        TextView tagline = new TextView(this);
+        tagline.setText("PERSONAL AI  •  HANDS-FREE");
+        tagline.setTextColor(0xFF8EB7D4);
+        tagline.setTextSize(10.0f);
+        tagline.setLetterSpacing(0.14f);
+        tagline.setGravity(Gravity.CENTER);
+        tagline.setPadding(0, dp(4), 0, dp(10));
+        hero.addView(tagline);
+
         this.status = new TextView(this);
-        this.status.setText("Türkçe sesli asistan");
-        this.status.setTextSize(15.0f);
-        this.status.setPadding(0, dp(5), 0, dp(8));
-        this.ui.addView(this.status);
+        this.status.setText("Hazır · “Hey Jarvis” bekleniyor");
+        this.status.setTextColor(0xFFB9D8EC);
+        this.status.setTextSize(12.0f);
+        this.status.setGravity(Gravity.CENTER);
+        this.status.setPadding(dp(12), dp(8), dp(12), dp(8));
+        GradientDrawable statusBackground = new GradientDrawable();
+        statusBackground.setColor(0xFF132B40);
+        statusBackground.setCornerRadius(dp(18));
+        statusBackground.setStroke(dp(1), 0xFF2A506D);
+        this.status.setBackground(statusBackground);
+        hero.addView(this.status, new LinearLayout.LayoutParams(-1, -2));
+
+        LinearLayout.LayoutParams heroParams = new LinearLayout.LayoutParams(-1, -2);
+        heroParams.bottomMargin = dp(12);
+        this.ui.addView(hero, heroParams);
+
         this.command = new EditText(this);
         this.command.setId(13260033);
         this.command.setHint(this.pendingTelegram ? "Mesajını yaz veya söyle…" : "Komut yaz…");
+        this.command.setHintTextColor(0xFF7894AC);
+        this.command.setTextColor(0xFFEAF5FF);
         this.command.setSingleLine(true);
-        this.ui.addView(this.command);
+        this.command.setTextSize(14.0f);
+        this.command.setPadding(dp(16), dp(12), dp(16), dp(12));
+        GradientDrawable commandBackground = new GradientDrawable();
+        commandBackground.setColor(0xFF102235);
+        commandBackground.setCornerRadius(dp(16));
+        commandBackground.setStroke(dp(1), 0xFF29465F);
+        this.command.setBackground(commandBackground);
+        LinearLayout.LayoutParams commandParams = new LinearLayout.LayoutParams(-1, dp(54));
+        commandParams.bottomMargin = dp(8);
+        this.ui.addView(this.command, commandParams);
         section("Hızlı işlemler");
-        button("Konuş", new Main$$ExternalSyntheticLambda47(this));
         button("Komutu çalıştır", new Main$$ExternalSyntheticLambda52(this));
         button("Hey Jarvis dinleyicisini aç", new Main$$ExternalSyntheticLambda53(this));
         button("Hey Jarvis dinleyicisini kapat", new Main$$ExternalSyntheticLambda54(this));
@@ -526,9 +580,12 @@ public final class Main extends Activity implements RecognitionListener {
     private void section(String str) {
         this.row = null;
         TextView textView = new TextView(this);
-        textView.setText(str);
-        textView.setTextColor(-6166017);
-        textView.setPadding(0, dp(10), 0, dp(3));
+        textView.setText(str.toUpperCase(TR));
+        textView.setTextColor(0xFF82B8D8);
+        textView.setTextSize(11.0f);
+        textView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        textView.setLetterSpacing(0.09f);
+        textView.setPadding(dp(4), dp(18), 0, dp(7));
         this.ui.addView(textView);
     }
 
@@ -536,21 +593,26 @@ public final class Main extends Activity implements RecognitionListener {
         Button button = new Button(this);
         button.setText(str);
         button.setAllCaps(false);
-        button.setOnClickListener(new Main$$ExternalSyntheticLambda59(runnable));
+        button.setOnClickListener(new Main$ExternalSyntheticLambda59(runnable));
         button.setTextSize(13.0f);
-        button.setTextColor(-1444613);
-        GradientDrawable gradientDrawable = new GradientDrawable();
-        gradientDrawable.setColor(str.equals("Konuş") ? -15246996 : -14668228);
-        gradientDrawable.setCornerRadius(dp(11));
-        button.setBackground(new RippleDrawable(ColorStateList.valueOf(866249215), gradientDrawable, null));
-        button.setPadding(dp(7), dp(3), dp(7), dp(3));
+        button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        button.setTextColor(0xFFE6F2FC);
+        boolean accent = str.toLowerCase(TR).contains("başlat") || str.toLowerCase(TR).contains("aç");
+        GradientDrawable gradientDrawable = new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR,
+                accent ? new int[]{0xFF1B4867, 0xFF12334D} : new int[]{0xFF1B3045, 0xFF122338});
+        gradientDrawable.setCornerRadius(dp(16));
+        gradientDrawable.setStroke(dp(1), accent ? 0xFF34759A : 0xFF2A455D);
+        button.setBackground(new RippleDrawable(ColorStateList.valueOf(0x3347CFFF), gradientDrawable, null));
+        button.setPadding(dp(10), dp(6), dp(10), dp(6));
+        button.setElevation(dp(2));
         int i = this.wide ? 3 : 2;
         if (this.row == null || this.row.getChildCount() >= i) {
             this.row = new LinearLayout(this);
             this.ui.addView(this.row);
         }
-        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(0, dp(53), 1.0f);
-        layoutParams.setMargins(dp(3), dp(3), dp(3), dp(3));
+        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(0, dp(60), 1.0f);
+        layoutParams.setMargins(dp(4), dp(4), dp(4), dp(4));
         this.row.setWeightSum(i);
         this.row.addView(button, layoutParams);
     }
