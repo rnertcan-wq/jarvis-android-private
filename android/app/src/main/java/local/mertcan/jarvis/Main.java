@@ -2,6 +2,7 @@ package local.mertcan.jarvis;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.PictureInPictureParams;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -39,6 +40,7 @@ import android.speech.tts.UtteranceProgressListener;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.OrientationEventListener;
+import android.util.Rational;
 import android.view.View;
 import android.view.WindowInsets;
 import android.widget.Button;
@@ -209,6 +211,20 @@ public final class Main extends Activity implements RecognitionListener {
             if (isVisible(main)) main.startLive();
         });
         return true;
+    }
+
+    static boolean enterDrivingPip() {
+        Main main = visible;
+        if (!isVisible(main) || Build.VERSION.SDK_INT < 26) return false;
+        try {
+            PictureInPictureParams params = new PictureInPictureParams.Builder()
+                    .setAspectRatio(new Rational(16, 9))
+                    .build();
+            main.enterPictureInPictureMode(params);
+            return main.isInPictureInPictureMode();
+        } catch (RuntimeException ignored) {
+            return false;
+        }
     }
 
     static /* synthetic */ TextView access$000(Main main) {
@@ -1819,6 +1835,7 @@ public final class Main extends Activity implements RecognitionListener {
         GeminiAccess.foreground(this, true);
         super.onResume();
         visible = this;
+        DriveDashboard.pipMode(this, isInPictureInPictureMode());
         if (this.recordingOrientation.canDetectOrientation()) {
             this.recordingOrientation.enable();
         }
