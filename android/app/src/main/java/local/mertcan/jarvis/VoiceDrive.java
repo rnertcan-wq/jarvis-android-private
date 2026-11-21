@@ -245,6 +245,13 @@ public final class VoiceDrive extends Service implements RecognitionListener {
     private void command(String str) {
         String str2;
         String stopCommand = str.trim().toLowerCase(Main.TR).replaceAll("[.!?]+$", "");
+        if (stopCommand.equals("evren live ac") || stopCommand.equals("evren live aç")
+                || stopCommand.equals("evren canli modu ac") || stopCommand.equals("evren canlı modu aç")
+                || stopCommand.equals("evren live baslat") || stopCommand.equals("evren live başlat")) {
+            if (Main.openEvrenLiveFromVoice()) return;
+            say("EVREN Live'i sesle açmak için JARVIS ekranını açık tut.", false, true);
+            return;
+        }
         if (stopCommand.equals("sessiz ol") || stopCommand.equals("live modu bitir")
                 || stopCommand.equals("canli modu bitir") || stopCommand.equals("bekleme modu")) {
             say("Tamam. Hey Jarvis dediğinde yeniden dinleyeceğim.", false, true);
