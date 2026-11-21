@@ -66,9 +66,9 @@ final class EvrenTalk {
         active = evrenTalk;
         AlertDialog alertDialogCreate = new AlertDialog.Builder(main).setTitle("EVREN Live")
                 .setMessage("Eller serbest dinleme açık. Konuşman bitince yanıt vereceğim. Kapatmak için “sessiz ol” diyebilirsin.")
-                .setNegativeButton("Kapat", new EvrenTalk$ExternalSyntheticLambda1(evrenTalk)).create();
+                .setNegativeButton("Kapat", (dialogInterface, which) -> evrenTalk.stopAndResumeWake()).create();
         evrenTalk.dialog = alertDialogCreate;
-        alertDialogCreate.setOnDismissListener(new EvrenTalk$ExternalSyntheticLambda2(evrenTalk));
+        alertDialogCreate.setOnDismissListener(dialogInterface -> evrenTalk.stop());
         evrenTalk.dialog.show();
         evrenTalk.message("Mikrofon hazırlanıyor…");
         evrenTalk.start();
