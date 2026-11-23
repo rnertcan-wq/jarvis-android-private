@@ -24,6 +24,7 @@ jobs:
           chmod +x build-source/RIO_0.3_Gemini_Live/gradlew
           python3 rio-live/patch.py
           python3 rio-live/keyfix_031.py
+          python3 rio-live/aq_live_032.py
       - name: Install JDK 17
         uses: actions/setup-java@v4
         with:
