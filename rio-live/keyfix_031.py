@@ -12,7 +12,7 @@ object GeminiKeyRules {
     fun isValid(raw: String): Boolean {
         val key = normalize(raw)
         return key.length in 18..256 && key.all {
-            it in 'A'..'Z' || it in 'a'..'z' || it in '0'..'9' || it == '_' || it == '-'
+            it in 'A'..'Z' || it in 'a'..'z' || it in '0'..'9' || it == '_' || it == '-' || it == '.'
         }
     }
 }
@@ -107,6 +107,10 @@ class GeminiKeyRulesTest {
         assertTrue(GeminiKeyRules.isValid("  AIzaSyExampleDemoKeyWithEnoughChars123456\\n"))
         assertEquals("ABC", GeminiKeyRules.normalize(" \\tABC \\n"))
     }
+    @Test fun newGoogleAuthorizationKeyIsAccepted() {
+        assertTrue(GeminiKeyRules.isValid("AQ.abcdefghijklmnopqrstuvwxyz0123456789_-ABCDEFGHI"))
+        assertTrue(GeminiKeyRules.isValid("  AQ.abcdefghijklmnopqrstuvwxyz0123456789_-ABCDEFGHI  "))
+    }
     @Test fun emptyAndShortKeysAreRejected() {
         assertFalse(GeminiKeyRules.isValid(""))
         assertFalse(GeminiKeyRules.isValid("short"))
@@ -119,7 +123,7 @@ class GeminiKeyRulesTest {
 """)
 build=p/"app/build.gradle.kts"
 s=build.read_text()
-s=s.replace('versionName = "0.3.0"','versionName = "0.3.1"')
-s=s.replace('versionCode = 4','versionCode = 5')
+s=s.replace('versionName = "0.3.0"','versionName = "0.3.2"')
+s=s.replace('versionCode = 4','versionCode = 6')
 build.write_text(s)
 print("RIO 0.3.1 key-fix applied")
