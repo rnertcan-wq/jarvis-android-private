@@ -1,0 +1,66 @@
+name: RIO AI 0.3 Gemini Live APK
+on:
+  push:
+    branches:
+      - rio-ai-0-3-0-live
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Reassemble RIO source archive
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat rio-live/parts/part*.b64 | base64 --decode > /tmp/rio-source.zip
+          echo 'a56c451de9e178ea7696d43a6f57176f432d5c25028230c07fa8250c81ce8962  /tmp/rio-source.zip' | sha256sum -c -
+          mkdir -p build-source
+          unzip -q /tmp/rio-source.zip -d build-source
+          chmod +x build-source/RIO_0.3_Gemini_Live/gradlew
+      - name: Install JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android 36 packages
+        shell: bash
+        run: |
+          echo "ANDROID_HOME=${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          SDKMGR=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
+          test -n "$SDKMGR"
+          yes | "$SDKMGR" --licenses >/dev/null || true
+          "$SDKMGR" --install 'platforms;android-36' 'build-tools;36.0.0' 'platform-tools'
+      - name: Build RIO and test
+        working-directory: build-source/RIO_0.3_Gemini_Live
+        run: ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+      - name: Verify and stage APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cp build-source/RIO_0.3_Gemini_Live/app/build/outputs/apk/debug/app-debug.apk artifacts/RIO-AI-0.3.0-debug.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose artifacts/RIO-AI-0.3.0-debug.apk
+          "$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 4 artifacts/RIO-AI-0.3.0-debug.apk
+          (cd artifacts && sha256sum RIO-AI-0.3.0-debug.apk > SHA256SUMS.txt)
+      - name: Upload RIO APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RIO-AI-0.3.0-APK
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload diagnostic reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RIO-AI-build-diagnostics
+          path: |
+            build-source/RIO_0.3_Gemini_Live/app/build/reports/
+            build-source/RIO_0.3_Gemini_Live/app/build/test-results/
+          if-no-files-found: warn
+          retention-days: 7
