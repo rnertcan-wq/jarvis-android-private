@@ -31,8 +31,10 @@ jobs:
         shell: bash
         run: |
           echo "ANDROID_HOME=${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager --install 'platforms;android-36' 'build-tools;36.0.0' 'platform-tools'
+          SDKMGR=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
+          test -n "$SDKMGR"
+          yes | "$SDKMGR" --licenses >/dev/null || true
+          "$SDKMGR" --install 'platforms;android-36' 'build-tools;36.0.0' 'platform-tools'
       - name: Build RIO and test
         working-directory: build-source/RIO_GitHub_Derleme
         run: ./gradlew --no-daemon --stacktrace :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
